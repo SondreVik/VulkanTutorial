@@ -37,6 +37,9 @@ private:
 	GLFWwindow* window;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT callback;
+	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	VkDevice device;
+	VkQueue graphicsQueue;
 
 	//funcs
 	void initWindow();
@@ -46,6 +49,7 @@ private:
 	void cleanup();
 	void createInstance();
 	void pickPhysicalDevice();
+	void createLogicalDevice();
 	bool checkValidationLayerSupport();
 	bool isDeviceSuitable(VkPhysicalDevice device);
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
