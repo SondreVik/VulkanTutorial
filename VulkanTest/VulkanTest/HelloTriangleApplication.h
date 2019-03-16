@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <optional>
+#include <set>
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -24,8 +25,9 @@ const bool enableValidationLayers = true;
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
+	std::optional<uint32_t> presentFamily;
 	bool isComplete() {
-		return graphicsFamily.has_value();
+		return graphicsFamily.has_value() && presentFamily.has_value();
 	}
 };
 
@@ -37,14 +39,17 @@ private:
 	GLFWwindow* window;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT callback;
+	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkDevice device;
 	VkQueue graphicsQueue;
+	VkQueue presentQueue;
 
 	//funcs
 	void initWindow();
 	void initVulkan();
 	void setupDebugCallback();
+	void createSurface();
 	void mainLoop();
 	void cleanup();
 	void createInstance();
