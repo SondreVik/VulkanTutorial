@@ -48,6 +48,7 @@ void HelloTriangleApplication::initWindow()
 void HelloTriangleApplication::initVulkan() {
 	createInstance();
 	setupDebugCallback();
+	createSurface();
 	pickPhysicalDevice();
 	createLogicalDevice();
 }
@@ -72,6 +73,12 @@ void HelloTriangleApplication::setupDebugCallback()
 	}
 }
 
+void HelloTriangleApplication::createSurface()
+{
+	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) 
+		throw std::runtime_error("failed to create window surface!");
+}
+
 void HelloTriangleApplication::mainLoop() {
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents(); // while window is up. Poll events. Now we have an aevent loop.
@@ -84,6 +91,7 @@ void HelloTriangleApplication::cleanup() {
 		DestroyDebugUtilsMessengerEXT(instance, callback, nullptr);
 	}
 
+	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyInstance(instance, nullptr);
 
 	glfwDestroyWindow(window);
@@ -185,6 +193,21 @@ void HelloTriangleApplication::createLogicalDevice()
 
 	createInfo.enabledExtensionCount = 0;
 
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
+	for (uint32_t queueFamily : uniqueQueueFamilies) {
+		VkDeviceQueueCreateInfo queueCreateInfo = {};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = queueFamily;
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
+
+	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+	createInfo.pQueueCreateInfos = queueCreateInfos.data();
+
 	if (enableValidationLayers) {
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -196,6 +219,8 @@ void HelloTriangleApplication::createLogicalDevice()
 		throw std::runtime_error("failed to create logical device!");
 
 	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+
 }
 
 bool HelloTriangleApplication::checkValidationLayerSupport()
@@ -248,6 +273,10 @@ QueueFamilyIndices HelloTriangleApplication::findQueueFamilies(VkPhysicalDevice 
 
 	int i = 0;
 	for (const auto& queueFamily : queueFamilies) {
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+		if (queueFamily.queueCount > 0 && presentSupport)
+			indices.presentFamily = i;
 		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			indices.graphicsFamily = i;
 
